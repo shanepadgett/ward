@@ -13,7 +13,7 @@ Reference we studied: [fallow](https://github.com/fallow-rs/fallow) — deep Rus
 Orchestrator + agent contract, not a new multi-language compiler.
 
 ```
-detect stack → run pack tools → normalize → diff/baseline gate → JSON + exit codes
+detect stack → run driver tools → normalize → diff/baseline gate → JSON + exit codes
 ```
 
 Optional: ward-native checks tools don't cover (secrets in diff, forbidden paths, "no tests touched", etc.).
@@ -28,15 +28,28 @@ Custom deep analysis only when a real gap hurts and no good tool exists.
 - Re-implementing ESLint/Clippy/Roslyn rules inside ward
 - Bundling full language SDKs
 
+## Drivers
+
+A **driver** is the pluggable unit for a stack (e.g. TS, Go). It owns the lifecycle for that stack:
+
+1. Detect whether the stack applies
+2. Resolve binaries (local → PATH → skip/fail)
+3. Invoke tools with machine-readable flags
+4. Parse upstream output (SARIF/JSON)
+5. Map into the shared finding spine
+6. Report what ran and what was skipped
+
+Not called "packs" — empty word. Not "adapters" for the unit as a whole — adapting shapes is one step; the job is operating a foreign toolchain end to end. Per-tool argv/parse helpers can live inside a driver without being a separate product concept.
+
 ## Languages
 
 Interest list: TypeScript/JavaScript, C#, Go, Rust, Java, Kotlin, Swift.
 
-Ship shape: multi-language *ready* (shared finding schema + pack interface), one pack deep at a time.
+Ship shape: multi-language *ready* (shared finding schema + driver interface), one driver deep at a time.
 
 1. TS/JS first (knip, oxlint/eslint, tsc, formatter, etc.)
-2. Go second if we want to prove the IR/pack model (clean toolchain)
-3. Rest as packs when needed — honest skips when a capability doesn't exist
+2. Go second if we want to prove the IR/driver model (clean toolchain)
+3. Rest as drivers when needed — honest skips when a capability doesn't exist
 
 ## Tool ownership
 
@@ -47,14 +60,14 @@ Resolve order per check:
 1. Explicit config override
 2. Project-local (`pnpm exec`, package bins, go/cargo tools)
 3. PATH
-4. Optional ward-managed pin (only when pack declares it safe)
+4. Optional ward-managed pin (only when the driver declares it safe)
 5. Skip or fail per policy — never silent fake pass
 
 Ward config owns orchestration and gate policy. Foreign rule config stays in foreign files.
 
 ## Version / output pain
 
-Adapters deal with invoke flags + machine-readable output (prefer SARIF/JSON). Support ranges per pack major. Normalize a small spine only:
+Drivers deal with invoke flags + machine-readable output (prefer SARIF/JSON). Support ranges per driver major. Normalize a small spine only:
 
 `tool`, `tool_version`, `rule_id`, `severity`, `path`, span, `message`, `fix_available`, fingerprint, category
 
@@ -68,14 +81,14 @@ Gate logic sits on that spine. Don't expose every upstream rule as a ward flag.
 
 Out-of-box means ward runs, detects what it can, reports `tools_used` / `tools_skipped`. Not "all seven SDKs included."
 
-TS pack can get closest to batteries-included via downloadable Node tools. Go/Rust/C# expect their normal toolchains on the machine.
+TS driver can get closest to batteries-included via downloadable Node tools. Go/Rust/C# expect their normal toolchains on the machine.
 
 ## Commands (sketch)
 
 | Command | Role |
 |---|---|
 | `ward guard` | Soul: changed-work gate for agents/CI |
-| `ward check` | Broader full/pack run |
+| `ward check` | Broader full/driver run |
 | `ward init` | Non-destructive scaffold: `ward.toml`, missing tool defaults, pins |
 | `ward init --recommend` | Plan only |
 | `ward init --force` | Overwrite ward-managed paths only |
@@ -92,4 +105,12 @@ Init does not run from guard. Overwrite is opt-in and narrow.
 
 ## Implementation language
 
-Go for core. Packs are thin Go adapters (argv + parsers). Heavy work stays upstream.
+Go for core. Drivers are thin Go modules (detect, resolve, argv, parsers). Heavy work stays upstream.
+
+Suggested layout vocabulary: `internal/driver`, stack impls under e.g. `internal/driver/ts`, config as `[[drivers]]` — not packs.
+
+## Standards
+
+- Always-on (Go baseline, vocabulary): `AGENTS.md`
+- Scoped (CLI / driver / report): `docs/standards/*.md` with `match` globs in YAML front matter
+- Intended for a pi standards-nudge hook: soft nudge on matched reads (read standard only if editing), hard nudge on edit unless that standard is already in context. Extension does not inline standard bodies. See `docs/standards/README.md`.
