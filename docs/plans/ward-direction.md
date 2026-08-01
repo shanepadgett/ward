@@ -12,7 +12,7 @@ Reference we studied: [fallow](https://github.com/fallow-rs/fallow) — deep Rus
 
 Orchestrator + agent contract, not a new multi-language compiler.
 
-```
+```text
 detect stack → run driver tools → normalize → diff/baseline gate → JSON + exit codes
 ```
 
@@ -86,7 +86,7 @@ TS driver can get closest to batteries-included via downloadable Node tools. Go/
 ## Commands (sketch)
 
 | Command | Role |
-|---|---|
+| --- | --- |
 | `ward guard` | Soul: changed-work gate for agents/CI |
 | `ward check` | Broader full/driver run |
 | `ward init` | Non-destructive scaffold: `ward.toml`, missing tool defaults, pins |

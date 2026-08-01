@@ -1,0 +1,83 @@
+{
+	"$schema": "https://raw.githubusercontent.com/shanepadgett/tau-agent/refs/heads/main/packages/agent/schemas/tau.schema.json",
+	"extensions": {
+		"silentCommandRunner": {
+			"enabled": true,
+			"commands": [
+				{
+					"name": "format",
+					"command": "mise run format",
+					"details": "goimports write + verify. Auto-fixes import/format drift; fails only if files still differ.",
+					"includeGlobs": [
+						"**/*.go"
+					],
+					"excludeGlobs": [
+						"vendor/**"
+					],
+					"timeoutMs": 60000
+				},
+				{
+					"name": "vet",
+					"command": "mise run vet",
+					"details": "go vet ./... — compiler-adjacent correctness checks.",
+					"includeGlobs": [
+						"**/*.go",
+						"go.mod",
+						"go.sum"
+					],
+					"excludeGlobs": [
+						"vendor/**"
+					],
+					"timeoutMs": 120000
+				},
+				{
+					"name": "lint",
+					"command": "mise run lint",
+					"details": "staticcheck ./... — static analysis beyond vet.",
+					"includeGlobs": [
+						"**/*.go",
+						"go.mod",
+						"go.sum"
+					],
+					"excludeGlobs": [
+						"vendor/**"
+					],
+					"timeoutMs": 180000
+				},
+				{
+					"name": "test",
+					"command": "mise run test",
+					"details": "go test ./... — unit tests for all packages.",
+					"includeGlobs": [
+						"**/*.go",
+						"go.mod",
+						"go.sum"
+					],
+					"excludeGlobs": [
+						"vendor/**"
+					],
+					"timeoutMs": 300000
+				},
+				{
+					"name": "markdown",
+					"command": "mise run markdown",
+					"details": "Run Markdown checks",
+					"includeGlobs": [
+						"**/*.md",
+						".markdownlint-cli2.jsonc"
+					],
+					"timeoutMs": 60000
+				},
+				{
+					"name": "mise-validate",
+					"command": "mise tasks validate",
+					"details": "Validate mise task definitions after mise.toml edits.",
+					"includeGlobs": [
+						"mise.toml"
+					],
+					"timeoutMs": 30000
+				}
+			]
+		}
+	}
+}

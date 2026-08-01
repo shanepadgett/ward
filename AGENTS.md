@@ -10,6 +10,8 @@ Ward gates agent-written code. Go CLI orchestrates existing tools, normalizes fi
 
 - All Go is `gofmt` / `goimports`.
 - Prefer `staticcheck` (via golangci-lint when configured). Fix what the tools flag.
+- Quality gate: `mise run check` (format → vet → staticcheck → test → markdown). Quiet, sequential, path:line tool output.
+- Atomic tasks: `format`, `format:fix`, `format:check`, `vet`, `lint`, `test`, `build`, `tidy`, `markdown`.
 
 ### Layout
 

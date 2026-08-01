@@ -36,7 +36,7 @@ How to change command surface, flags, help, and process I/O.
 Treat exit codes as a stable API. Scripts and agents branch on `$?` without parsing text.
 
 | Code | Meaning |
-|---|---|
+| --- | --- |
 | 0 | Success / gate passed |
 | 1 | Gate failed (findings over policy) — report still on stdout |
 | 2 | Usage / bad flags |

@@ -1,2 +1,135 @@
 [tools]
 go = "1.26.5"
+"go:golang.org/x/tools/cmd/goimports" = "0.48.0"
+"go:honnef.co/go/tools/cmd/staticcheck" = "0.7.0"
+"npm:markdownlint-cli2" = "0.22.1"
+
+[settings]
+# Sequential + quiet: agents get tool output only, no interleaved mise chrome.
+jobs = 1
+task_output = "quiet"
+
+# --- helpers (hidden) -------------------------------------------------------
+
+[tasks."_go-files"]
+hide = true
+run = '''
+find . -name '*.go' ! -path './.git/*' ! -path './vendor/*' | LC_ALL=C sort
+'''
+
+[tasks."_go-packages"]
+hide = true
+run = '''
+set -euo pipefail
+# go list prints a stderr warning (exit 0) when the module has no packages yet.
+# Keep real failures visible; drop only that empty-module noise.
+out="$(go list ./... 2>&1)" || {
+  printf '%s\n' "$out" >&2
+  exit 1
+}
+printf '%s\n' "$out" | grep -v 'matched no packages' || true
+'''
+
+# --- format -----------------------------------------------------------------
+
+[tasks."format:fix"]
+description = "Format Go sources with goimports (writes)"
+run = '''
+set -euo pipefail
+files="$(mise run _go-files)"
+if [ -z "$files" ]; then
+  exit 0
+fi
+printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 goimports -w
+'''
+
+[tasks."format:check"]
+description = "List Go files that still need goimports"
+run = '''
+set -euo pipefail
+files="$(mise run _go-files)"
+if [ -z "$files" ]; then
+  exit 0
+fi
+unformatted="$(printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 goimports -l)"
+if [ -n "$unformatted" ]; then
+  printf '%s\n' "$unformatted"
+  exit 1
+fi
+'''
+
+[tasks.format]
+description = "Fix Go formatting, then fail if anything remains"
+run = [{ task = "format:fix" }, { task = "format:check" }]
+
+# --- static analysis --------------------------------------------------------
+
+[tasks.vet]
+description = "Run go vet (compiler-adjacent checks)"
+run = '''
+set -euo pipefail
+packages="$(mise run _go-packages)"
+if [ -z "$packages" ]; then
+  exit 0
+fi
+go vet ./...
+'''
+
+[tasks.lint]
+description = "Run staticcheck"
+run = '''
+set -euo pipefail
+packages="$(mise run _go-packages)"
+if [ -z "$packages" ]; then
+  exit 0
+fi
+staticcheck ./...
+'''
+
+# --- test / module ----------------------------------------------------------
+
+[tasks.test]
+description = "Run Go tests"
+run = '''
+set -euo pipefail
+packages="$(mise run _go-packages)"
+if [ -z "$packages" ]; then
+  exit 0
+fi
+go test ./...
+'''
+
+[tasks.tidy]
+description = "Run go mod tidy (writes go.mod/go.sum)"
+run = "go mod tidy"
+
+# --- markdown ----------------------------------------------------------------
+
+[tasks.markdown]
+description = "Lint and autofix Markdown with markdownlint-cli2"
+run = "markdownlint-cli2 --fix"
+
+[tasks.build]
+description = "Compile all packages (no test run, no binary artifacts)"
+run = '''
+set -euo pipefail
+packages="$(mise run _go-packages)"
+if [ -z "$packages" ]; then
+  exit 0
+fi
+# -run=^$ compiles every package under ./... without executing tests and
+# without writing main binaries next to sources the way `go build ./...` does.
+go test -run=^$ -count=1 ./...
+'''
+
+# --- aggregate --------------------------------------------------------------
+
+[tasks.check]
+description = "Format, vet, lint, test, and markdown (agent default gate)"
+run = [
+  { task = "format" },
+  { task = "vet" },
+  { task = "lint" },
+  { task = "test" },
+  { task = "markdown" },
+]

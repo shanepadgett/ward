@@ -19,7 +19,7 @@ Gate logic and machine consumers use a **small normalized spine**. Drivers map i
 Every finding carries at least:
 
 | Field | Rule |
-|---|---|
+| --- | --- |
 | `tool` | Upstream tool id |
 | `tool_version` | When known; omit or empty only if unavailable |
 | `rule_id` | Upstream rule / diagnostic code |

@@ -12,7 +12,7 @@ match:
 ```
 
 | File | Work it governs |
-|---|---|
+| --- | --- |
 | [cli.md](./cli.md) | Command layer, streams, flags, exits, help |
 | [driver.md](./driver.md) | Stack drivers |
 | [report.md](./report.md) | Findings, report shape, gate inputs |
